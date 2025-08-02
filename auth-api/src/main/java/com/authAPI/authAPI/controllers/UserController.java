@@ -1,6 +1,5 @@
 package com.authAPI.authAPI.controllers;
 
-
 import com.authAPI.authAPI.models.User;
 import com.authAPI.authAPI.repositories.UserRepository;
 import com.authAPI.authAPI.services.JWTService;
@@ -71,7 +70,7 @@ public class UserController {
 
         String token = jwtService.generateToken(existingUser);
         Map<String, String> response = new HashMap<>();
-        response.put("token", "Bearer " + token);
+        response.put("token", token);
         return ResponseEntity.ok(response);
     }
 
@@ -81,8 +80,7 @@ public class UserController {
         return ResponseEntity.ok("Welcome to secured endpoint");
     }
 
-    // Protected endpoint, accessible only to specified role
-    @PreAuthorize("hasRole('API')")
+
     @GetMapping("/public-key")
     public String getPublicKey() {
         PublicKey publicKey = jwtService.getPublicKey();
