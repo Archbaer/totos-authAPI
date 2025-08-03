@@ -1,22 +1,51 @@
 package com.authAPI.authAPI.services;
 
-
 import com.authAPI.authAPI.models.User;
-import com.authAPI.authAPI.utility.KeyGenerator;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Date;
 
 @Service
 public class JWTService {
 
-    private final KeyPair keyPair = KeyGenerator.generateKeyPair();
+    private final KeyPair keyPair;
     private final long EXPIRATION_MS = 3600000; // 1 hour
+
+    public JWTService(
+            @Value("${jwt.private-key-base64}") String privateKeyBase64,
+            @Value("${jwt.public-key-base64}") String publicKeyBase64
+    ) {
+        this.keyPair = loadKeyPair(privateKeyBase64, publicKeyBase64);
+    }
+
+    private KeyPair loadKeyPair(String privateKeyBase64, String publicKeyBase64) {
+        try {
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
+            byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+
+            PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+            X509EncodedKeySpec publicSpec = new X509EncodedKeySpec(publicKeyBytes);
+
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            PrivateKey privateKey = keyFactory.generatePrivate(privateSpec);
+            PublicKey publicKey = keyFactory.generatePublic(publicSpec);
+
+            return new KeyPair(publicKey, privateKey);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load key pair from environment variables", e);
+        }
+    }
 
     public String generateToken(User user) {
         return Jwts.builder()
@@ -30,15 +59,13 @@ public class JWTService {
 
     public String getRole(String token){
         Claims claims = extractClaims(token);
-        System.out.println("All claims in token: "+ claims.toString());
-        String role = claims.get("role", String.class);
-        System.out.println("Extracted role: "+ role);
-        return extractClaims(token).get("role", String.class);
+        return claims.get("role", String.class);
     }
 
     public Claims extractClaims(String token) {
-        return Jwts.parser()
+        return Jwts.parserBuilder()
                 .setSigningKey(keyPair.getPublic())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
@@ -60,7 +87,7 @@ public class JWTService {
     }
 
     public String getUsername(String token) {
-        return Jwts.parser().setSigningKey(keyPair.getPrivate()).parseClaimsJws(token).getBody().getSubject();
+        return extractClaims(token).getSubject();
     }
 }
 

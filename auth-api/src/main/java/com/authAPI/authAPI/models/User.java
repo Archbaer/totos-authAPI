@@ -49,6 +49,10 @@ public class User implements UserDetails {
         return this.password;
     }
 
+    public String getRole() {
+        return this.role;
+    }
+
     @Override
     public boolean isAccountNonExpired() {
         return true;
