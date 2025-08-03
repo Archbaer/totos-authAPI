@@ -17,7 +17,12 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public void register(User user) {
-        user.setRole("USER");
+        if (userRepository.count() == 0) {
+            user.setRole("ADMIN"); // First user is admin
+        } else {
+            user.setRole("USER");
+        }
+        // Encode the password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
