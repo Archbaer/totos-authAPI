@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.List;
 
 @Getter
+@Setter
+@Valid
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
